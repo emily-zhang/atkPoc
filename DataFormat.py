@@ -14,7 +14,7 @@ import sys
 
 #------------global variable----------------------------
 Read_Split_Flag = '\t'
-Write_Split_Flag='|'
+Write_Split_Flag=','
 
 Sex_Default_Man='1'
 Sex_Default_Women='2'
@@ -68,21 +68,21 @@ def FillDefaultValue(line_data):
 
     #get cols items
     cols_items= line_data[0].split(Read_Split_Flag);
-
+    print line_data[1].split(Read_Split_Flag);
     #Loop rows
     for i in range(len(line_data)):
         line = line_data[i];
         groupArray = line.split(Read_Split_Flag);#split row
 
         #Loop cols
-        for j in range(len(groupArray)):
+        for j in range(len(cols_items)):
             value=groupArray[j];
             col_Name=cols_items[j];
 
             if col_Name =="FinalCheck":
                 #replace anomaly char in string
                 value = value.replace(Read_Split_Flag,';')
-                value = value.replace(',',';')
+                value = value.replace(',','%')
                 groupArray[j] = value
 
             if col_Name =="Sex" and value == '男':
@@ -97,17 +97,23 @@ def FillDefaultValue(line_data):
             if col_Name =="GXY" and value == 'No':
                 groupArray[j] = GXY_No
 
-            if value == '' or value == '\n':
+            if value == '' or value == '\n' or value == '\r\n':
                 groupArray[j] = Default_Value
+
+            groupArray[j] = groupArray[j].replace(';','')
 
 
         #create new rows and add to the lines_data
         newline=''
-        for j in range(len(groupArray)):
-            if j < len(groupArray)-1:
+        for j in range(len(cols_items)):
+            if j < len(cols_items)-1:
                 newline += groupArray[j] + Write_Split_Flag
             else:
                 newline += groupArray[j]
+
+        if i > 0:
+           newline += '\n'
+
         #print newline;
         line_data[i]=newline;
     return line_data;
@@ -117,6 +123,8 @@ def FillDefaultValue(line_data):
 def ExtractDataFromCols(col_array,line_data):
     global Read_Split_Flag
     global Write_Split_Flag
+
+    list=[];
 
     colgroup=line_data[0].split(Write_Split_Flag)
     #print Read_Split_Flag
@@ -132,20 +140,33 @@ def ExtractDataFromCols(col_array,line_data):
             #print colName
             for c in range(len(col_array)):
                 if colName.strip() == col_array[c].strip():
-                    if c < len(col_array) -2:
+                    if c < len(col_array) -1:
                         newline += groupArray[j] + Write_Split_Flag
+                        if groupArray[j].count(".") >  1  :
+                           if IsInList(colName,list) == 1:
+                                 list.append(colName.strip())
+                                 print colName.strip()
+
+
                     else:
                         newline += groupArray[j]
         #print newline;
         line_data[i]=newline+'\n';
     return line_data
 
+def IsInList(col_Name , list):
+     count =1;
+     for x in range(len(list)):
+         if x == col_Name.strip():
+            count=0
+     return count;
+
 
 #------------Execute  Script---------------------------------------
 def main():
     #char endoing
-    reload(sys)
-    sys.setdefaultencoding("utf-8")
+    #reload(sys)
+    #sys.setdefaultencoding("utf-8")
 
     #file & config path
     sourceFilePath='SampleData.txt'
@@ -157,12 +178,12 @@ def main():
     #fill  data
     line_data = ReadFromFile(sourceFilePath);
     fill_data = FillDefaultValue(line_data);
-    WriteToFile(fill_data,writeFillFilePath);
+    #WriteToFile(fill_data,writeFillFilePath);
 
     #Extract data
     Extract_config = ReadFromFile(extractConfig)
     Extract_data=ExtractDataFromCols(Extract_config,fill_data)
-    WriteToFile(Extract_data,extractFilePath);
+    #WriteToFile(Extract_data,extractFilePath);
 
 if __name__ == '__main__':
     main()
